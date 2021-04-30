@@ -1,0 +1,175 @@
+More JOIN Operations
+1. List the films where the yr is 1962 [Show id,title]
+SELECT id, title
+  FROM movie
+    WHERE yr = 1962;
+
+2. When was Citizen Kane released?
+Give the year of 'Citizen Kane'
+SELECT yr
+  FROM movie
+    WHERE title = 'Citizen Kane';
+
+3. List all of the Star Trek Movies, include the id title and yr (all include 'Stark Trek' in the title. Order results by year
+SELECT id, title, yr
+  FROM movie
+    WHERE title LIKE '%Star Trek%'
+    ORDER BY yr;
+
+4. What id number does the actor 'Glenn Close' have?
+SELECT id
+  FROM actor
+    WHERE name = 'Glenn Close';
+
+5. What is the id of the film 'Casablanca'
+SELECT id
+  FROM movie
+    WHERE title = 'Casablanca';
+    
+6. Obtain the cast list for 'Casablanca'
+SELECT name
+  FROM casting JOIN actor ON casting.actorid = actor.id
+    WHERE movieid = (SELECT id
+      FROM movie
+        WHERE title = 'Casablanca');
+        
+7. Alien Cast list : Obtain the cast list for the film 'Alien'
+SELECT name
+	FROM casting JOIN actor ON casting.actorid = actor.id
+		WHERE movieid = (SELECT id
+			FROM movie
+				WHERE title = 'Alien');
+
+or
+
+SELECT name 
+	FROM movie JOIN casting ON movie.id = casting.movieid
+		JOIN actor ON casting.actorid = actor.id
+	WHERE movie.title = 'Alien'
+	
+8. List the films in which Harrison Ford has appeared
+SELECT movie.title
+	FROM movie JOIN casting ON movie.id = casting.movieid
+	JOIN actor ON actor.id = casting.actorid
+		WHERE actor.name = 'Harrison Ford';
+
+9. List the films in which harrison ford has appeared but not as a starring role. Use ord!= 1 to ensure that it is only non star roles
+SELECT movie.title
+	FROM movie JOIN casting ON movie.id = casting.movieid
+	JOIN actor on actor.id = casting.actorid
+		WHERE actor.name = 'Harrison Ford'
+		AND ord != 1;
+		
+10. List the films together with the leading star for all 1962 films
+SELECT movie.title, actor.name 
+	FROM movie JOIN casting ON movie.id = casting.movieid
+		JOIN actor on actor.id = casting.actorid
+			WHERE casting.ord = 1
+			AND movie.yr = 1962;
+			
+11. Which were the busiest years for 'Rock Hudson', show the year and the number of movies he made each year for any year in which he made more than two movies
+SELECT movie.yr, COUNT(movie.title)
+	FROM movie JOIN casting ON movie.id = casting.movieid
+		JOIN actor ON actor.id = casting.actorid
+			WHERE actor.name = 'Rock Hudson'
+			GROUP BY movie.yr
+				HAVING COUNT(movie.title) >= 2;
+				
+12. List the film title and the leading actor for all of the films 'Julie Andrews' played in
+SELECT movieid FROM casting
+WHERE actorid IN (
+  SELECT id FROM actor
+  WHERE name='Julie Andrews')
+	
+I was given the query above but If I run just the bottom 2 lines I should get Julie Andrew's actor id
+SELECT actor.id
+	FROM actor WHERE name = 'Julie Andrews'
+	
+This should always return the actor.id associated with Julie Andrews 812 so I should be able to substitue that part of my given query with 812
+SELECT casting.movieid
+	FROM casting
+		WHERE casting.actorid IN (812)
+		
+This will return the movieid of all of the Julie Andrews movies
+Now I'm getting somewhere, but I don't want the value associated with casting.movieid I want to return the movie titles and I need to know the actors in the film aside from
+Julie Andrews (we only want to return the leading actor but first we have to return all actors in a film). So lets join the casting table to the movie table
+SELECT movie.title, actorid
+	FROM movie JOIN casting ON movie.id = casting.movieid
+		WHERE movie.id IN(
+		SELECT casting.movieid
+			FROM casting 
+				WHERE casting.actorid IN(812))
+
+Nice this returned to us all a table of movie titles and actorids from films where Julie Andrews played in. Next I want to return the ord column as well so that I can 
+determine who the leading actor in each film was
+SELECT movie.title, casting.actorid, casting.ord
+	FROM movie JOIN casting ON movie.id = casting.movieid
+		WHERE movie.id IN(
+		SELECT casting.movieid
+			FROM casting
+				WHERE casting.actorid IN(812))
+This adds the ord column from casting, next lets make sure we only grab the lead actor or where ord = 1
+SELECT movie.title, casting.actorid
+	FROM movie JOIN casting ON movie.id = casting.movieid
+		WHERE movie.id IN(
+		SELECT casting.movieid
+			FROM casting
+				WHERE casting.actorid IN(812))
+		AND ord = 1;
+Nice now we get an output dataframe where we can see the title of the film and the actorid associated with the leading actor in that film, but we aren't done. We want
+to show the actor name instead of the actorid. To do so I need to join in the actor table to see the names associated with the id value. I can remove the casting.actorid
+column and include the name column
+
+SELECT movie.title, name
+	FROM movie JOIN casting ON movie.id = casting.movieid
+	JOIN actor ON casting.actorid = actor.id
+		WHERE movie.id IN(
+		SELECT casting.movieid
+			FROM casting
+				WHERE casting.actorid IN (
+					SELECT actor.id 
+						FROM actor
+							WHERE name = 'Julie Andrews'))
+		AND ord = 1;
+I kind of cheated and hardcoded in the 812 id associated with Julie Andrews to fix this I should replace the 812 with my original andrews query			
+
+SELECT movie.title, name
+	FROM movie JOIN casting ON movie.id = casting.movieid
+	JOIN actor ON casting.actorid = actor.id
+		WHERE movie.id IN(
+		SELECT casting.movieid
+			FROM casting
+				WHERE casting.actorid IN (
+					SELECT actor.id 
+						FROM actor
+							WHERE name = 'Julie Andrews'))
+		AND ord = 1;
+
+13. Obtain a list in alphabetical order of actors who've had atleast 15 starting roles
+SELECT actor.name
+	FROM actor JOIN casting ON actor.id = casting.actorid
+		WHERE ord = 1
+		GROUP BY name
+			HAVING COUNT(movieid) >= 15
+ORDER BY name
+				
+14.	List the films released in the year 1978 ordered by the number of actors in the cast then by titles
+SELECT title, COUNT(c.actorid)
+	FROM movie m JOIN casting c ON m.id = c.movieid	
+		WHERE yr = 1978
+	GROUP BY title
+ORDER BY COUNT(c.actorid) DESC, title;
+
+15. List all people who have worked with 'Art Garfunkel'
+SELECT DISTINCT(actor.name)
+	FROM actor JOIN casting c ON actor.id = casting.actorid
+WHERE casting.movieid IN(
+	SELECT casting.movieid
+		FROM casting 
+			WHERE casting.actorid IN(
+				SELECT casting.actorid
+					FROM casting
+						WHERE actor.name = 'Art Garfunkel'
+						)
+			);
+AND actor.name != 'Art Garfunkel'
