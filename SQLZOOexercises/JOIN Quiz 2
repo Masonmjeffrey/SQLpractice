@@ -1,0 +1,34 @@
+1. Select the statement which lists the unfortunate directors of the movies which have cause financial loses (gross < budget)
+SELECT name
+  FROM actor INNER JOIN movie ON actor.id = movie.director 
+    WHERE gross M budget
+ 
+2. Select the correct example of joining three tables
+SELECT * 
+  FROM actor JOIN casting ON actor.id = casting.actorid
+             JOIN movie ON movie.id = casting.movieid
+             
+3. Select the statement that shows the list of actors called 'John' by order of number of movies in which they acted
+SELECT actor.name, COUNT(casting.movieid)
+  FROM actor JOIN casting on actor.id = casting.actorid
+    WHERE actor.name LIKE 'John %'
+GROUP BY actor.name
+ORDER BY COUNT(casting.movieid) DESC
+
+4. Select the result that would be obtained from the following code
+SELECT title
+  FROM movie JOIN casting ON (casting.movieid = movie.id)
+             JOIN actor ON (casting.actorid = actor.id)
+       WHERE name = 'Paul Hogan' AND ord = 1
+
+5. Select the statement that lists all the actors that starred in movies directed by Ridley Scott who has id 351
+SELECT the statement that lists all the actors that starred in movies directed by Ridley Scott who has id 351
+SELECT actor.name
+ FROM movie JOIN casting ON movie.id = casting.movieid
+            JOIN actor ON casting.actorid = actor.id
+  WHERE director = 351
+  
+7. Select the result that would be obtained from the following code
+SELECT title, yr 
+  FROM movie, casting, actor
+    WHERE name = 'Robert De Niro' AND movieid = movie.id AND actorid = actor.id AND ord = 3
